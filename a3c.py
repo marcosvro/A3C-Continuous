@@ -9,18 +9,18 @@ import tensorflow as tf
 
 #PARAMETERS
 OUTPUT_GRAPH = True         # safe logs
-RENDER=True                 # render one worker
+RENDER=False                # render one worker
 LOG_DIR = './log'           # savelocation for logs
-N_WORKERS = multiprocessing.cpu_count()*4 # number of workers
+N_WORKERS = 20              # number of workers
 MAX_EP_STEP = 200           # maxumum number of steps per episode
 MAX_GLOBAL_EP = 2000        # total number of episodes
 GLOBAL_NET_SCOPE = 'Global_Net'
-UPDATE_GLOBAL_ITER = 10     # sets how often the global net is updated
+UPDATE_GLOBAL_ITER = 30     # sets how often the global net is updated
 GAMMA = 0.90                # discount factor
 ENTROPY_BETA = 0.01         # entropy factor
 LR_A = 0.0001               # learning rate for actor
 LR_C = 0.001                # learning rate for critic
-LOAD_MODEL = True          # if true load saved weights
+LOAD_MODEL = True           # if true load saved weights
 
 # set environment
 GAME = 'Pendulum-v0'
