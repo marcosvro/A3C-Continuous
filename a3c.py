@@ -21,7 +21,7 @@ ENTROPY_BETA = 0.01         # entropy factor
 LR_A = 0.0001               # learning rate for actor
 LR_C = 0.001                # learning rate for critic
 LOAD_MODEL = True           # if true load saved weights
-EXECUTE_MODEL = False       # if true, dont train model
+EXECUTE_MODEL = True       # if true, dont train model
 
 # set environment
 GAME = 'Pendulum-v0'
@@ -32,7 +32,7 @@ env.reset()
 N_S = env.observation_space.shape[0]                    # number of states
 N_A = env.action_space.shape[0]                         # number of actions
 A_BOUND = [env.action_space.low, env.action_space.high] # action bounds
-if not os.path.exists(LOG_DIR+"/model.ckpt"):
+if not os.path.exists(LOG_DIR+"/model.ckpt.meta"):
     LOAD_MODEL = False
 
 # Network for the Actor Critic
@@ -118,6 +118,7 @@ class Worker(object):
    
     def run(self):
         s = self.env.reset()
+        self.AC.pull_global()
         while 1:
             self.env.render()
             a = self.AC.choose_action(s)         # estimate stochastic action based on policy 
@@ -212,7 +213,7 @@ if __name__ == "__main__":
     if EXECUTE_MODEL:
         try:
             workers[0].run()
-        except Exception as e:
+        except KeyboardInterrupt as e:
             pass
     else:
         worker_threads = []
@@ -222,7 +223,8 @@ if __name__ == "__main__":
             t.start()
             worker_threads.append(t)
         coord.join(worker_threads)  # wait for termination of workers
-        global_ac.saver.save(sess, LOG_DIR+"/model.ckpt")
+
+    global_ac.saver.save(sess, LOG_DIR+"/model.ckpt")
     
     
     plt.plot(np.arange(len(global_rewards)), global_rewards) # plot rewards
