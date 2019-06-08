@@ -20,6 +20,7 @@ GAMMA = 0.90                # discount factor
 ENTROPY_BETA = 0.01         # entropy factor
 LR_A = 0.0001               # learning rate for actor
 LR_C = 0.001                # learning rate for critic
+LOAD_MODEL = True          # if true load saved weights
 
 # set environment
 GAME = 'Pendulum-v0'
@@ -30,6 +31,8 @@ env.reset()
 N_S = env.observation_space.shape[0]                    # number of states
 N_A = env.action_space.shape[0]                         # number of actions
 A_BOUND = [env.action_space.low, env.action_space.high] # action bounds
+if not os.path.exists(LOG_DIR+"/model.ckpt"):
+    LOAD_MODEL = False
 
 # Network for the Actor Critic
 class ACNet(object):
@@ -42,6 +45,7 @@ class ACNet(object):
             with tf.variable_scope(scope):
                 self.s = tf.placeholder(tf.float32, [None, N_S], 'S')       # state
                 self.a_params, self.c_params = self._build_net(scope)[-2:]  # parameters of actor and critic net
+                self.saver = tf.train.Saver()                               # create saver of Global Net
         else:   # local net, calculate losses
             with tf.variable_scope(scope):
                 self.s = tf.placeholder(tf.float32, [None, N_S], 'S')            # state
@@ -184,19 +188,28 @@ if __name__ == "__main__":
 
     coord = tf.train.Coordinator()
     sess.run(tf.global_variables_initializer())
+    if (LOAD_MODEL):
+        global_ac.saver.restore(sess, LOG_DIR+"/model.ckpt")
+
+
 
     if OUTPUT_GRAPH: # write log file
         if os.path.exists(LOG_DIR):
             shutil.rmtree(LOG_DIR)
         tf.summary.FileWriter(LOG_DIR, sess.graph)
 
-    worker_threads = []
-    for worker in workers: #start workers
-        job = lambda: worker.work()
-        t = threading.Thread(target=job)
-        t.start()
-        worker_threads.append(t)
-    coord.join(worker_threads)  # wait for termination of workers
+    try:
+        worker_threads = []
+        for worker in workers: #start workers
+            job = lambda: worker.work()
+            t = threading.Thread(target=job)
+            t.start()
+            worker_threads.append(t)
+        coord.join(worker_threads)  # wait for termination of workers
+        global_ac.saver.save(sess, LOG_DIR+"/model.ckpt")
+    except Exception as e:
+        global_ac.saver.save(sess, LOG_DIR+"/model.ckpt")
+    
     
     plt.plot(np.arange(len(global_rewards)), global_rewards) # plot rewards
     plt.xlabel('step')
