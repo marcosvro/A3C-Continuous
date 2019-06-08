@@ -11,7 +11,7 @@ import tensorflow as tf
 OUTPUT_GRAPH = True         # safe logs
 RENDER=True                 # render one worker
 LOG_DIR = './log'           # savelocation for logs
-N_WORKERS = multiprocessing.cpu_count() # number of workers
+N_WORKERS = multiprocessing.cpu_count()*4 # number of workers
 MAX_EP_STEP = 200           # maxumum number of steps per episode
 MAX_GLOBAL_EP = 2000        # total number of episodes
 GLOBAL_NET_SCOPE = 'Global_Net'
