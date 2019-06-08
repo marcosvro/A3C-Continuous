@@ -15,12 +15,13 @@ N_WORKERS = 20              # number of workers
 MAX_EP_STEP = 200           # maxumum number of steps per episode
 MAX_GLOBAL_EP = 2000        # total number of episodes
 GLOBAL_NET_SCOPE = 'Global_Net'
-UPDATE_GLOBAL_ITER = 30     # sets how often the global net is updated
+UPDATE_GLOBAL_ITER = 10     # sets how often the global net is updated
 GAMMA = 0.90                # discount factor
 ENTROPY_BETA = 0.01         # entropy factor
 LR_A = 0.0001               # learning rate for actor
 LR_C = 0.001                # learning rate for critic
 LOAD_MODEL = True           # if true load saved weights
+EXECUTE_MODEL = False       # if true, dont train model
 
 # set environment
 GAME = 'Pendulum-v0'
@@ -115,6 +116,13 @@ class Worker(object):
         self.AC = ACNet(name, sess, globalAC) # create ACNet for each worker
         self.sess=sess
    
+    def run(self):
+        s = self.env.reset()
+        while 1:
+            self.env.render()
+            a = self.AC.choose_action(s)         # estimate stochastic action based on policy 
+            s, r, done, info = self.env.step(a)  # make step in environment
+
     def work(self):
         global global_rewards, global_episodes
         total_step = 1
@@ -182,9 +190,12 @@ if __name__ == "__main__":
         global_ac = ACNet(GLOBAL_NET_SCOPE,sess)  # we only need its params
         workers = []
         # Create workers
-        for i in range(N_WORKERS):
-            i_name = 'W_%i' % i   # worker name
-            workers.append(Worker(i_name, global_ac,sess))
+        if EXECUTE_MODEL:
+            workers.append(Worker("W_0", global_ac, sess))
+        else:
+            for i in range(N_WORKERS):
+                i_name = 'W_%i' % i   # worker name
+                workers.append(Worker(i_name, global_ac,sess))
 
     coord = tf.train.Coordinator()
     sess.run(tf.global_variables_initializer())
@@ -198,7 +209,12 @@ if __name__ == "__main__":
             shutil.rmtree(LOG_DIR)
         tf.summary.FileWriter(LOG_DIR, sess.graph)
 
-    try:
+    if EXECUTE_MODEL:
+        try:
+            workers[0].run()
+        except Exception as e:
+            pass
+    else:
         worker_threads = []
         for worker in workers: #start workers
             job = lambda: worker.work()
@@ -206,8 +222,6 @@ if __name__ == "__main__":
             t.start()
             worker_threads.append(t)
         coord.join(worker_threads)  # wait for termination of workers
-        global_ac.saver.save(sess, LOG_DIR+"/model.ckpt")
-    except Exception as e:
         global_ac.saver.save(sess, LOG_DIR+"/model.ckpt")
     
     
